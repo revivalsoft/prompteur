@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompteur LocalStorage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: black;
+            color: white;
+            text-align: center;
+        }
+
+        #prompteur {
+            height: 60vh;
+            overflow: hidden;
+            position: relative;
+            border-top: 2px solid #444;
+            border-bottom: 2px solid #444;
+        }
+
+        #texte {
+            position: absolute;
+            width: 100%;
+            font-size: 28px;
+            line-height: 1.6;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            font-size: 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .speed,
+        .mirror,
+        .fullscreen {
+            background: #444;
+            color: white;
+        }
+
+        .config {
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        input[type="color"],
+        input[type="range"] {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎤 LibrePrompt</h1>
+
+    <button id="fileInputBtn"
+        style="margin:10px auto; padding:12px 20px; background:#007bff; color:white; border:none; border-radius:8px; cursor:pointer;">📂
+        Charger un fichier texte</button>
+    <input type="file" id="fileInput" accept=".txt" style="display:none">
+
+    <div id="prompteur">
+        <div id="texte"></div>
+    </div>
+
+    <!-- Boutons de contrôle -->
+    <div>
+        <button id="startPauseBtn" style="background:green; color:white;">▶ Démarrer</button>
+        <button class="mirror" onclick="toggleMirror()">🔄 Miroir</button>
+        <button class="fullscreen" onclick="toggleFullscreen()">⛶ Plein écran</button>
+        <button onclick="resetPosition()" style="background:#555; color:white;">↩ Revenir en haut</button>
+        <label>⚡ Vitesse : <input type="range" min="0.5" max="5" step="0.1" value="1" id="speedRange"></label>
+    </div>
+
+    <!-- Boutons couleur et taille sous les autres boutons -->
+    <div class="config">
+        <label>🎨 Texte : <input type="color" id="textColor" value="#ffffff"></label>
+        <label>🌌 Fond : <input type="color" id="bgColor" value="#000000"></label>
+        <label>📏 Taille : <input type="range" min="16" max="60" value="28" id="fontSize"></label>
+    </div>
+
+    <script>
+        const texte = document.getElementById("texte");
+        const prompteur = document.getElementById("prompteur");
+        const fileInput = document.getElementById("fileInput");
+        const fileInputBtn = document.getElementById("fileInputBtn");
+        const startPauseBtn = document.getElementById("startPauseBtn");
+        const speedRange = document.getElementById("speedRange");
+        const textColorInput = document.getElementById("textColor");
+        const bgColorInput = document.getElementById("bgColor");
+        const fontSizeInput = document.getElementById("fontSize");
+
+        let position = 0;
+        let vitesse = parseFloat(speedRange.value);
+        let animationId = null;
+        let miroir = false;
+
+        function saveSettings() {
+            localStorage.setItem("prompteurTexte", texte.innerText);
+            localStorage.setItem("prompteurVitesse", vitesse);
+            localStorage.setItem("prompteurFontSize", fontSizeInput.value);
+            localStorage.setItem("prompteurTextColor", textColorInput.value);
+            localStorage.setItem("prompteurBgColor", bgColorInput.value);
+        }
+
+        function restoreSettings() {
+            const savedTexte = localStorage.getItem("prompteurTexte");
+            if (savedTexte) texte.innerText = savedTexte;
+
+            const savedVitesse = parseFloat(localStorage.getItem("prompteurVitesse"));
+            if (savedVitesse) { vitesse = savedVitesse; speedRange.value = savedVitesse; }
+
+            const savedFontSize = localStorage.getItem("prompteurFontSize");
+            if (savedFontSize) { fontSizeInput.value = savedFontSize; texte.style.fontSize = savedFontSize + "px"; }
+
+            const savedTextColor = localStorage.getItem("prompteurTextColor");
+            if (savedTextColor) { textColorInput.value = savedTextColor; texte.style.color = savedTextColor; }
+
+            const savedBgColor = localStorage.getItem("prompteurBgColor");
+            if (savedBgColor) { bgColorInput.value = savedBgColor; prompteur.style.background = savedBgColor; document.body.style.background = savedBgColor; }
+        }
+
+        function resetPosition() {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+            position = 0;
+            texte.style.top = position + "px";
+            startPauseBtn.textContent = "▶ Démarrer";
+            startPauseBtn.style.background = "green";
+        }
+
+        function scroll() {
+            position -= vitesse;
+            texte.style.top = position + "px";
+            if (Math.abs(position) < texte.offsetHeight) {
+                animationId = requestAnimationFrame(scroll);
+            } else {
+                animationId = null;
+                startPauseBtn.textContent = "▶ Démarrer";
+                startPauseBtn.style.background = "green";
+            }
+        }
+
+        startPauseBtn.addEventListener("click", () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+                startPauseBtn.textContent = "▶ Démarrer";
+                startPauseBtn.style.background = "green";
+            } else {
+                scroll();
+                startPauseBtn.textContent = "⏸ Pause";
+                startPauseBtn.style.background = "red";
+            }
+        });
+
+        speedRange.addEventListener("input", () => { vitesse = parseFloat(speedRange.value); saveSettings(); });
+        fontSizeInput.addEventListener("input", () => { texte.style.fontSize = fontSizeInput.value + "px"; saveSettings(); });
+        textColorInput.addEventListener("input", () => { texte.style.color = textColorInput.value; saveSettings(); });
+        bgColorInput.addEventListener("input", () => { prompteur.style.background = bgColorInput.value; document.body.style.background = bgColorInput.value; saveSettings(); });
+
+        fileInputBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                texte.innerText = e.target.result;
+                saveSettings();
+                resetPosition();
+            };
+            reader.readAsText(file, "UTF-8");
+        });
+
+        window.addEventListener("load", restoreSettings);
+
+        function toggleMirror() { miroir = !miroir; texte.style.transform = miroir ? "scaleX(-1)" : "scaleX(1)"; }
+        function toggleFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } }
+
+        if ("serviceWorker" in navigator) { navigator.serviceWorker.register("service-worker.js").then(() => console.log("✅ Service Worker enregistré")).catch(err => console.error("Erreur Service Worker:", err)); }
+
+    </script>
+</body>
+
+</html>
