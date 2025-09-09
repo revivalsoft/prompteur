@@ -76,9 +76,13 @@
     <!-- Boutons de contrôle -->
     <div>
         <button id="startPauseBtn" style="background:green; color:white;">▶ Démarrer</button>
+        <button onclick="reculer()" style="background:#888; color:white;">⏮ Reculer</button>
+        <button onclick="resetPosition()" style="background:#555; color:white;">↩ Revenir en haut</button>
         <button class="mirror" onclick="toggleMirror()">🔄 Miroir</button>
         <button class="fullscreen" onclick="toggleFullscreen()">⛶ Plein écran</button>
-        <button onclick="resetPosition()" style="background:#555; color:white;">↩ Revenir en haut</button>
+
+    </div>
+    <div>
         <label>⚡ Vitesse : <input type="range" min="0.5" max="5" step="0.1" value="1" id="speedRange"></label>
     </div>
 
@@ -86,6 +90,9 @@
     <div class="config">
         <label>🎨 Texte : <input type="color" id="textColor" value="#ffffff"></label>
         <label>🌌 Fond : <input type="color" id="bgColor" value="#000000"></label>
+
+    </div>
+    <div>
         <label>📏 Taille : <input type="range" min="16" max="60" value="28" id="fontSize"></label>
     </div>
 
@@ -187,7 +194,11 @@
         function toggleMirror() { miroir = !miroir; texte.style.transform = miroir ? "scaleX(-1)" : "scaleX(1)"; }
         function toggleFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } }
 
-        if ("serviceWorker" in navigator) { navigator.serviceWorker.register("service-worker.js").then(() => console.log("✅ Service Worker enregistré")).catch(err => console.error("Erreur Service Worker:", err)); }
+        function reculer() {
+            position += 50; // valeur en pixels, à ajuster selon ton besoin
+            if (position > 0) position = 0; // éviter de dépasser le haut du texte
+            texte.style.top = position + "px";
+        }
 
     </script>
 </body>
